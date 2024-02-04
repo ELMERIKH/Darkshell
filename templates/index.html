@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center</title>
+    <style>
+          body {
+            font-family: 'Courier New', Courier, monospace; /* Mimics typical cmd shell font */
+            margin: 20px;
+            background: linear-gradient(270deg, #000, #0a0c0b);
+            background-size: 400% 400%;
+           
+            color: #31a50e; /* Gold text color for the whole body */
+        }
+        
+        #commandInput,
+        button {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #00d400;
+            color: rgb(0, 0, 0);
+            font-weight: bold;
+            margin-top: auto; /* Push the prompt to the bottom */
+        }
+
+        h2, h3 {
+            color: #05ee24;
+        }
+
+      
+        #results {
+    flex: 3;
+    width: 100%;
+    box-sizing: border-box;
+    white-space: pre-wrap;
+    overflow-y: auto;
+    background-color: #000;
+    color: #70d437;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid #56d331;
+    border-radius: 5px;
+    font-family: 'Courier New', Courier, monospace;
+    height: 400px; /* Adjust the height as needed */
+}
+nav {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        nav a {
+            color: rgb(21, 255, 0);
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    
+    <nav>
+        <a href="/">Home</a>
+        <a href="/uploads">Uploads</a>
+        <a href="/interact">C2</a>
+        <a href="/clients">Clients</a>
+        <a href="/Theshow">TheShow</a>
+    </nav>
+    <h2>Command Center</h2>
+   
+    <h3>Results:</h3>
+    <div id="results"></div>
+
+    <input type="text" id="commandInput" placeholder="Enter command" />
+    <button onclick="sendCommand()">Send Command</button>
+    <script>
+        async function sendCommand() {
+            const commandInput = document.getElementById('commandInput');
+            const command = commandInput.value;
+            const response = await fetch('/commands', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: command })
+            });
+    
+            if (response.ok) {
+                commandInput.value = ''; // Clear input
+                waitForResults(); // Start polling for results
+            } else {
+                alert('Failed to send command.');
+            }
+        }
+    
+        async function waitForResults() {
+            let resultsReady = false;
+            while (!resultsReady) {
+                const response = await fetch('/results/ready'); // This endpoint needs to be implemented on the server
+                if (response.ok) {
+                    const data = await response.json();
+                    resultsReady = data.ready; // Assume this endpoint returns { ready: true } when results are ready
+                    if (resultsReady) {
+                        fetchResults(); // Fetch and display the results
+                    } else {
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before checking again
+                    }
+                }
+            }
+        }
+    
+        async function fetchResults() {
+    const response = await fetch('/results');
+    if (response.ok) {
+        const data = await response.text(); // or await response.json();
+        const resultsContainer = document.getElementById('results');
+        
+        // Clear previous content
+        resultsContainer.innerHTML = '';
+
+        // Display the received result in the results container
+        const lines = data.split('\n');
+
+        // Use a <div> for each line with monospaced font
+        lines.forEach(line => {
+            const divElement = document.createElement('div');
+            divElement.style.fontFamily = "'Courier New', Courier, monospace";
+            divElement.textContent = line; // Use textContent to preserve line breaks
+
+            // Append the <div> element to the results container
+            resultsContainer.appendChild(divElement);
+        });
+    }
+}
+    </script>
+</body>
+</html>

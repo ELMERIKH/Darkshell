@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploaded Files</title>
+
+    <style>
+       body {
+            font-family: 'Courier New', Courier, monospace; /* Mimics typical cmd shell font */
+            margin: 20px;
+            background: linear-gradient(270deg, #000, #0a0c0b);
+            background-size: 400% 400%;
+           
+            color: #31a50e; /* Gold text color for the whole body */
+        }
+        
+
+        h1 {
+            text-align: center;
+            color: #ff0000;
+        }
+
+        .file-container {
+            background-color: #222222;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        a {
+            color: #17c700;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        nav {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        nav a {
+            color: rgb(0, 255, 0);
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+        .delete-button {
+            background-color: #da1c1c;
+            color: #000000;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+<body>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/uploads">Uploads</a>
+        <a href="/interact">C2</a>
+        <a href="/clients">Clients</a>
+        <a href="/Theshow">TheShow</a>
+    </nav>
+    <h1>Harvest</h1>
+    <div class="file-container">
+    <ul>
+        {% for filename in filenames %}
+            <li><a href="{{ url_for('download_file', filename=filename) }}"download>>{{ filename }}</a></li>
+            <button class="delete-button" onclick="deleteFile('{{ filename }}')">Delete</button>
+
+            {% endfor %}
+    </ul>
+</div>
+<script>
+ function deleteFile(filename) {
+    // Confirm with the user before deleting the file
+    if (confirm(`Are you sure you want to delete ${filename}?`)) {
+        // Send a DELETE request to the server to delete the file
+        fetch(`/delete_file/${filename}`, { method: 'DELETE' })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`Failed to delete file: ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                console.log(data.message); // Log the server response
+                // Update the UI or reload the page as needed
+                window.location.reload();
+            })
+            .catch(error => console.error('Error:', error));
+    }
+}
+</script>
+</body>
+</html>

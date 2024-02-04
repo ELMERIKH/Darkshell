@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registered Clients</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            margin: 20px;
+            background: linear-gradient(270deg, #000, #0a0c0b);
+            background-size: 400% 400%;
+            color: #31a50e;
+        }
+
+        #commandInput,
+        button {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #00d400;
+            color: rgb(0, 0, 0);
+            font-weight: bold;
+            margin-top: auto;
+        }
+
+        h2, h3 {
+            color: #05ee24;
+        }
+
+        #results {
+            flex: 3;
+            width: 100%;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            background-color: #000;
+            color: #70d437;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #56d331;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            height: 400px;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        nav a {
+            color: rgb(21, 255, 0);
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        /* Additional styles for Command Center */
+        #interactionForm {
+            margin-top: 20px;
+        }
+
+        #command, #resultsContainer {
+            margin-top: 10px;
+        }
+
+        /* Styles for the dropdown */
+        #client_id {
+            background-color: #000;
+            color: #05ee24; /* Green text color */
+            border: 1px solid #05ee24; /* Green border */
+            padding: 8px;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        /* Styles for the dropdown options */
+        #client_id option {
+            background-color: #000;
+            color: #05ee24; /* Green text color */
+        }
+    </style>
+</head>
+<body>
+      
+    <nav>
+        <a href="/">Home</a>
+        <a href="/uploads">Uploads</a>
+        <a href="/interact">C2</a>
+        <a href="/clients">Clients</a>
+        <a href="/Theshow">TheShow</a>
+    </nav>
+    <h2>Registered Clients</h2>
+    <form id="interactForm">
+        <label for="client_id">Select a client:</label>
+        <select name="client_id" id="client_id" required>
+            {% for client_id in clients %}
+                <option value="{{ client_id }}" class="{{ 'online' if client_id in up_clients else 'offline' }}">
+                    {{ client_id }}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="button" onclick="sendToInteract()">Interact</button>
+    </form>
+
+    <h2>Client Status:</h2>
+    <div id="clientStatus"></div>
+
+    <script>
+        async function sendToInteract() {
+            const selectedClientID = document.getElementById("client_id").value;
+
+            try {
+                const response = await fetch("/interact", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json;charset=UTF-8",
+                    },
+                    body: JSON.stringify({ clientID: selectedClientID }),
+                });
+
+                if (response.ok) {
+                    window.location.href = `/interact?clientID=${selectedClientID}`;
+
+                    // Optionally, you can handle success or further actions here
+                } else {
+                    console.error("Error redirecting:", response.statusText);
+                }
+            } catch (error) {
+                console.error("Error redirecting:", error);
+            }
+        }
+
+        async function checkClientStatus() {
+    const dropdown = document.getElementById("client_id");
+    const clientStatusDiv = document.getElementById("clientStatus");
+    const options = dropdown.options;
+
+    const onlineClients = [];
+
+    const clientStatusPromises = [];
+
+    for (let i = 0; i < options.length; i++) {
+        const clientID = options[i].value;
+
+        const statusPromise = (async () => {
+            try {
+                const response = await fetch(`/commands/${clientID}`);
+                if (response.status === 200) {
+                    options[i].classList.remove('offline');
+                    options[i].classList.add('online');
+                    onlineClients.push(clientID);
+                    return `${clientID}: <span class="online">Online</span>`;
+                } else {
+                    options[i].classList.remove('online');
+                    options[i].classList.add('offline');
+                    return `${clientID}: <span class="offline">Offline</span>`;
+                }
+            } catch (error) {
+                console.error("Error checking client status:", error);
+                options[i].classList.remove('online');
+                options[i].classList.add('offline');
+                return `${clientID}: <span class="offline">Error</span>`;
+            }
+        })();
+
+        clientStatusPromises.push(statusPromise);
+    }
+
+    const clientStatusResults = await Promise.all(clientStatusPromises);
+    const clientStatusHTML = clientStatusResults.map(result => `<p>${result}</p>`).join('');
+
+    clientStatusDiv.innerHTML = clientStatusHTML;
+
+    // Update the dropdown options only with the online clients
+    dropdown.innerHTML = '';
+    onlineClients.forEach(clientID => {
+        const option = document.createElement("option");
+        option.value = clientID;
+        option.text = clientID;
+        option.classList.add('online');
+        dropdown.add(option);
+    });
+
+    // Check again after 30 seconds (adjust this interval as needed)
+    setTimeout(checkClientStatus, 30000);
+}
+
+        // Start checking client status when the page loads
+        window.onload = function () {
+            checkClientStatus();
+        };
+    </script>
+</body>
+</html>
