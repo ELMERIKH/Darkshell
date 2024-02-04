@@ -1,158 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta content="width=device-width, initial-scale=1" name="viewport" />
     <title>Cypher C2</title>
- 
-     <style>
+
+    <style>
         #loading-text {
-          font-size: 70px; /* Adjust this value as needed */
+            font-size: 70px; /* Adjust this value as needed */
         }
-      </style>
-        <link rel="stylesheet" href="{{ url_for('static', filename='./assets/css/style.css') }}">
-        <link rel="stylesheet" href="{{ url_for('static', filename='./assets/css/bootstrap.min.css') }}">
-        <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='./assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='./assets/css/bootstrap.min.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
-        <script >
-            var password = 'password123';
+    <script>
+        // Removed the hard-coded password from the client-side code
 
-$(document).ready(function() {
-    let passwordForm = document.getElementById("passwordForm");
-    passwordForm.addEventListener("submit", function(e) {
-        e.preventDefault();
-        
-        var enteredPassword = document.getElementById("sipassword").value;
-        console.log("Entered Password:", enteredPassword);
+        $(document).ready(function () {
+            let passwordForm = document.getElementById("passwordForm");
+            passwordForm.addEventListener("submit", function (e) {
+                e.preventDefault();
 
-        if (enteredPassword === password) {
-            console.log("Password Matched. Granting access.");
-            showGranted();
-        } else {
-            console.log("Incorrect Password. Showing failed message.");
-            showFailed();
+                var enteredPassword = document.getElementById("sipassword").value;
+                console.log("Entered Password:", enteredPassword);
+
+                // Send the entered password to the server for verification
+                $.post("/authenticate", { password: enteredPassword }, function (data) {
+                    if (data === "success") {
+                        console.log("Password Matched. Granting access.");
+                        showGranted();
+                    } else {
+                        console.log("Incorrect Password. Showing failed message.");
+                        showFailed();
+                    }
+                });
+            });
+        });
+
+        function showGranted() {
+            document.getElementById("password-box").style.display = "none";
+            document.getElementById("granted-box").style.display = "block";
+            setTimeout(function () {
+                showAccessing();
+
+            }, 1800);
+
         }
-    });
-});
 
-function showGranted() {
-    document.getElementById("password-box").style.display = "none";
-    document.getElementById("granted-box").style.display = "block";
-    setTimeout(function() {
-        showAccessing();
-       
-    }, 1800);
-    
-}
+        function showAccessing() {
+            document.getElementById("granted-box").style.display = "none";
+            document.getElementById("accessing-box").style.display = "block";
 
-function showAccessing() {
-    document.getElementById("granted-box").style.display = "none";
-    document.getElementById("accessing-box").style.display = "block";
-   
-    startProgressBar();
-}
+            startProgressBar();
+        }
 
-function showFailed() {
-    document.getElementById("password-box").style.display = "none";
-    document.getElementById("denied-box").style.display = "block";
-    document.getElementById("sipassword").value = '';
-    setTimeout(revertToPassword, 2000);
-}
+        function showFailed() {
+            document.getElementById("password-box").style.display = "none";
+            document.getElementById("denied-box").style.display = "block";
+            document.getElementById("sipassword").value = '';
+            setTimeout(revertToPassword, 2000);
+        }
 
-function revertToPassword() {
-    document.getElementById("denied-box").style.display = "none";
-    document.getElementById("password-box").style.display = "block";
-}
+        function revertToPassword() {
+            document.getElementById("denied-box").style.display = "none";
+            document.getElementById("password-box").style.display = "block";
+        }
 
-function showLoading() {
-    document.getElementById("password-box").style.display = "none";
-    document.getElementById("accessing-box").style.display = "none";
-    window.location.replace("/index");
-}
+        function showLoading() {
+            document.getElementById("password-box").style.display = "none";
+            document.getElementById("accessing-box").style.display = "none";
+            window.location.replace("/index");
+        }
 
-function startProgressBar() 
-{
-    var a = 0;
-    if (a == 0) 
-    {
-        a++;
-        var width = 1;
-        var pg = document.getElementById("progressBar");
-        var interval = setInterval(increasePercentage, 30);
+        function startProgressBar() {
+            var a = 0;
+            if (a == 0) {
+                a++;
+                var width = 1;
+                var pg = document.getElementById("progressBar");
+                var interval = setInterval(increasePercentage, 30);
 
-        function increasePercentage() 
-        {
-            if (width >= 100) 
-            {
-                clearInterval(interval);
-                setTimeout(showLoading, 500);
-            } 
-            else 
-            {    
-                width++;
-                pg.style.width = width + "%";
-                $("#accessing-loading-percentage").html(width  + "%");
+                function increasePercentage() {
+                    if (width >= 100) {
+                        clearInterval(interval);
+                        setTimeout(showLoading, 500);
+                    } else {
+                        width++;
+                        pg.style.width = width + "%";
+                        $("#accessing-loading-percentage").html(width + "%");
+                    }
+
+                }
+
             }
-           
+
         }
-        
-    }
-  
-}
-        </script>
+    </script>
 </head>
 
 <body>
     <main>
         <div id="password-box" class="full-center">
-          <form id="passwordForm" action="">
-            <div class="computer-text">Enter Password 
-              <span id="password-input">[ <input type="password" name="sipassword" id="sipassword" maxlength="100" autofocus /> ]</span>
-            </div>
-          </form>
+            <form id="passwordForm" action="">
+                <div class="computer-text">Enter Password
+                    <span id="password-input">[ <input type="password" name="sipassword" id="sipassword" maxlength="100" autofocus /> ]</span>
+                </div>
+            </form>
         </div>
-  
+
         <div id="granted-box" class="full-center">
-          <div id="granted-text">Access Granted</div>
+            <div id="granted-text">Access Granted</div>
         </div>
-  
+
         <div id="denied-box" class="full-center">
-          <div id="denied-text">Access Failed</div>
+            <div id="denied-text">Access Failed</div>
         </div>
-  
+
         <div id="accessing-box" class="full-center">
-          <div id="accessing-text">Access in progress</div>
-          <div id="accessing-loading-bar"><div id="accessing-loading-percentage">1%</div><div id="progressBar"></div></div>
-        
-      </div>
-     
-  
+            <div id="accessing-text">Access in progress</div>
+            <div id="accessing-loading-bar"><div id="accessing-loading-percentage">1%</div><div id="progressBar"></div></div>
 
+        </div>
 
-      
-      <!-- Access Denied -->
+        <!-- Access Denied -->
 
-      <div class="wrapper-access-denied" id="acc-denied" hidden>
-        <div class="poll-box" >
-            <div class="poll-container">
-                <div class="poll-question">You have been denied by the admin.</div>
-                <div class="poll-panel row mt-30">
-                    <div class="btn poll-panel-btn" aria-role="button" data-result="0" data-vote="0" id="back-to-dashboard" > <span>Back to Dashboard</span></div>
+        <div class="wrapper-access-denied" id="acc-denied" hidden>
+            <div class="poll-box">
+                <div class="poll-container">
+                    <div class="poll-question">You have been denied by the admin.</div>
+                    <div class="poll-panel row mt-30">
+                        <div class="btn poll-panel-btn" aria-role="button" data-result="0" data-vote="0" id="back-to-dashboard"> <span>Back to Dashboard</span></div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Ends Here -->
+
+        <!-- ################################################# -->
+
+
     </div>
-
-    <!-- Ends Here -->
-        
-    <!-- ################################################# -->
-
-    
-  </div>
-  </main>
+    </main>
 
 
 </body>
+
 </html>
