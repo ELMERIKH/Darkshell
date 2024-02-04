@@ -30,7 +30,7 @@
 
                 // Send the entered password to the server for verification
                 $.post("/authenticate", { password: enteredPassword }, function (data) {
-                    if (data === "success") {
+                    if (data.message === "success") {
                         console.log("Password Matched. Granting access.");
                         showGranted();
                     } else {

@@ -57,7 +57,6 @@ def requires_authentication(f):
 
 # ...
 
-
 @app.route('/authenticate', methods=['POST'])
 def authenticate_user():
     global user_authenticated
@@ -69,11 +68,11 @@ def authenticate_user():
         user_authenticated = True
         response = jsonify({"message": "success"})
         response.set_cookie(COOKIE_NAME, 'authenticated', max_age=COOKIE_MAX_AGE)
-        return "success"
+        return response  # Return the response object
     else:
         user_authenticated = False
-        return "failure"
-# ...
+        response = jsonify({"message": "failure"})
+        return response  # Return the response object
 
 def check_user_authentication():
     global user_authenticated
@@ -87,6 +86,7 @@ def home():
 
 
 @app.route('/index')
+@requires_authentication
 def index():
     return render_template('index.html')
 
