@@ -8,6 +8,8 @@ communication is encrypted and decrypted inside server using rsa both ways
 
 file uploading is encrypted using fernet 
 
+use rsa.py and fernet.py to generate keys and replace values in the top variables of both server.py and client.py
+
 password for server:
 ---------------------------
 ![2024-01-30 11_42_54-TOP-SECRET](https://github.com/ELMERIKH/WebHTTPC2/assets/96123439/0f6faeb5-219f-4a98-8f4c-aff13ba05765)
