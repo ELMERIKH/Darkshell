@@ -46,7 +46,7 @@ will add more features
 
 setup:
 ---
-git clone https://github.com/ELMERIKH/WebHTTPC2
+git clone https://github.com/ELMERIKH/WebC2
 
 use rsa.py and fernet.py to generate keys and replace values in the top variables of both server.py and client.py
 
