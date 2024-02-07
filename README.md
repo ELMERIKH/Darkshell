@@ -8,9 +8,7 @@ communication is encrypted and decrypted inside server using rsa both ways
 
 file uploading is encrypted using fernet 
 
-use rsa.py and fernet.py to generate keys and replace values in the top variables of both server.py and client.py
-
-generate password hash with pass.py
+server can be host only as mere webservice no need for vps ;)
 
 password for server:
 ---------------------------
@@ -46,5 +44,15 @@ available commands :
 
 will add more features
 
+setup:
+---
+git clone https://github.com/ELMERIKH/WebHTTPC2
 
+use rsa.py and fernet.py to generate keys and replace values in the top variables of both server.py and client.py
+
+generate password  hash for server with pass.py
+
+pip install -r requirements.txt
+
+python server.py
 
