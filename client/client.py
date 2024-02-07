@@ -26,15 +26,7 @@ from cryptography.fernet import Fernet
 
 fernet_key = b'your fernet key value'
 
-server_public_key_str ='''-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsvgfMYZR0jXlA4j1GFM/
-hMKuyjoBdjucagVP1U9nppcCG7AWt3AFCs4lAgxx8PTIXiAf5ixOlsXDGmFw3dcf
-rkkoElmMSK3Uy0vcMQqOBpXGjib1hbLmxEShdBjhz4KrQe7ij5l+a4k3TnzCJkDS
-JP76UD+YaITqDdQ8LmbMc4sa62Eqz8lMa1x0kElgFzgZ8ej/59LqPC8HEQpGL8DS
-9gfPbg+DCBSQADLiNf87ThVaDB/WlfuN6XLT7tzJwlYMXTVkFsgm8WzefY+Uflwo
-VDkNSqC4Rj9AZiRolmJm55o75OoaJz6TJ/onPruvh3sPKhU4psYwosDHTkGS3XOw
-9QIDAQAB
------END PUBLIC KEY-----
+server_public_key_str ='''paste public_key value
 '''
 def user_data():
         def display_name() -> str:
