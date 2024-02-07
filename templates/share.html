@@ -43,10 +43,10 @@
     <img id="screenImage" src="/uploaded_files/screenshot.jpg" alt="Screen Share Image" style="max-width: 90%;">
 
     <script>
-        // Reload the page every 3 seconds
         setInterval(function() {
-            location.reload();
-        }, 3000);
+            var screenImage = document.getElementById("screenImage");
+            screenImage.src = screenImage.src + "?" + new Date().getTime(); // Add a timestamp to force the browser to reload the image
+        }, 500); // Refresh every 1 second
     </script>
 </body>
 </html>

@@ -137,7 +137,6 @@
                 console.error("Error redirecting:", error);
             }
         }
-
         async function checkClientStatus() {
     const dropdown = document.getElementById("client_id");
     const clientStatusDiv = document.getElementById("clientStatus");
@@ -152,8 +151,10 @@
 
         const statusPromise = (async () => {
             try {
-                const response = await fetch(`/commands/${clientID}`);
-                if (response.status === 200) {
+                const response = await fetch(`/check_connection/${clientID}`);
+                const result = await response.json();
+
+                if (response.status === 200 && result.status === "online") {
                     options[i].classList.remove('offline');
                     options[i].classList.add('online');
                     onlineClients.push(clientID);
@@ -193,10 +194,9 @@
     setTimeout(checkClientStatus, 30000);
 }
 
-        // Start checking client status when the page loads
-        window.onload = function () {
-            checkClientStatus();
-        };
+// Start checking client status when the page loads
+checkClientStatus();
+       
     </script>
 </body>
 </html>

