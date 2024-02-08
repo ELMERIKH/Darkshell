@@ -8,7 +8,7 @@ communication is encrypted and decrypted inside server using rsa both ways
 
 file uploading is encrypted using fernet 
 
-server can be host only as mere webservice no need for vps ;)
+server can be hosted only as mere webservice no need for vps ;)
 
 password for server:
 ---------------------------
