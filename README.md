@@ -40,7 +40,7 @@ available commands :
 
 -screenshot : screenshot screen
 
--info : get user info and net info
+-info : get user info and net info, wifi passwords ..
 
 will add more features
 
