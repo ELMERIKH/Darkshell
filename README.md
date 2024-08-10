@@ -2,6 +2,9 @@
 
 Greetings
 -----------------
+
+still in devellopment !!!
+
 this is a simple http or https server that acts as a c2 using http post and get requests to send commands and get results from client(victim machine) 
 
 communication is encrypted and decrypted inside server using rsa both ways
